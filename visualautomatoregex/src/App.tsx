@@ -30,6 +30,8 @@ const App: React.FC = () => {
       <Canvas
         modoCriarEstado={modoCriarEstado}
         setModoCriarEstado={setModoCriarEstado}
+        modoCriarTransicao={modoCriarTransicao}
+        setModoCriarTransicao={setModoCriarTransicao}
       />
     </>
   );

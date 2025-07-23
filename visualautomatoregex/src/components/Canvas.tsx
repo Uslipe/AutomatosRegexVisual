@@ -9,13 +9,22 @@ interface Estado {
   nome: string;
 }
 
+//Representa uma transição---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+interface Transicao {
+  origemNome: string;
+  destinoNome: string;
+  simbolo: string;
+}
+
 //Define as propriedades do canvas-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 interface CanvasProps {
   modoCriarEstado: boolean;
   setModoCriarEstado: React.Dispatch<React.SetStateAction<boolean>>;
+  modoCriarTransicao: boolean;
+  setModoCriarTransicao: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado }) => {
+const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado, modoCriarTransicao, setModoCriarTransicao }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: -2500, y: -2500 });
   const [isDragging, setIsDragging] = useState(false);
@@ -26,6 +35,10 @@ const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado }) 
   // Estados criados
   const [estados, setEstados] = useState<Estado[]>([]);
   const [contador, setContador] = useState(0);
+
+  // Transições
+  const [transicoes, setTransicoes] = useState<Transicao[]>([]);
+  const [estadoOrigemTransicao, setEstadoOrigemTransicao] = useState<Estado | null>(null);
 
   // Inicia drag do canvas (pan)
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -91,15 +104,37 @@ const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado }) 
 
   // Inicia drag de um estado para mover
   const handleMouseDownEstado = (e: React.MouseEvent, estado: Estado) => {
-    e.stopPropagation(); // evita propagação e drag do canvas
-    setEstadoSelecionadoId(estado.id);
+    e.stopPropagation();
 
+    if (modoCriarTransicao) {
+      if (!estadoOrigemTransicao) {
+        setEstadoOrigemTransicao(estado);
+      } else {
+        const simbolo = prompt("Digite o símbolo da transição:");
+        if (!simbolo || simbolo.trim() === "") return;
+
+        const novaTransicao: Transicao = {
+          origemNome: estadoOrigemTransicao.nome,
+          destinoNome: estado.nome,
+          simbolo: simbolo.trim(),
+        };
+
+        setTransicoes((prev) => [...prev, novaTransicao]);
+        setEstadoOrigemTransicao(null);
+        setModoCriarTransicao(false); // volta ao modo padrão
+      }
+      return;
+    }
+
+    // Lógica de drag continua igual:
+    setEstadoSelecionadoId(estado.id);
     const rect = containerRef.current!.getBoundingClientRect();
     dragOffset.current = {
       x: e.clientX - (estado.x + position.x + rect.left),
       y: e.clientY - (estado.y + position.y + rect.top),
     };
   };
+
 
   return (
     <div
@@ -122,6 +157,26 @@ const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado }) 
           backgroundSize: "20px 20px",
         }}
       >
+        {transicoes.map((t, idx) => {
+          const origem = estados.find(e => e.nome === t.origemNome);
+          const destino = estados.find(e => e.nome === t.destinoNome);
+          if (!origem || !destino) return null;
+
+          const x1 = origem.x;
+          const y1 = origem.y;
+          const x2 = destino.x;
+          const y2 = destino.y;
+
+          return (
+            <svg key={idx} style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}>
+              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="black" strokeWidth={2} />
+              <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 5} fontSize="16" fill="black">
+                {t.simbolo}
+              </text>
+            </svg>
+          );
+        })}
+
         {estados.map((estado) => (
           <div
             key={estado.id}
@@ -134,8 +189,8 @@ const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado }) 
               width: 50,
               height: 50,
               borderRadius: "50%",
-              backgroundColor: "#fff",
-              border: "2px solid #000",
+              backgroundColor: estadoOrigemTransicao?.id === estado.id ? "#e0f7fa" : "#fff",
+              border: estadoOrigemTransicao?.id === estado.id ? "3px solid #2196f3" : "2px solid #000",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
