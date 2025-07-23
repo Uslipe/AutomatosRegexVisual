@@ -166,16 +166,95 @@ const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado, mo
           const y1 = origem.y;
           const x2 = destino.x;
           const y2 = destino.y;
+          const raio = 25;
+
+          if (origem.id === destino.id) {
+            // Transição para o mesmo estado → curva circular
+            const offsetY = -raio * 2.5;
+
+            const pathD = `
+              M ${x1} ${y1}
+              C ${x1 + 40} ${y1 + offsetY}, ${x1 - 40} ${y1 + offsetY}, ${x1} ${y1}
+            `;
+
+            return (
+              <svg key={idx} style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}>
+                <defs>
+                  <marker
+                    id={`arrowhead-${idx}`}
+                    markerWidth="10"
+                    markerHeight="7"
+                    refX="10"
+                    refY="3.5"
+                    orient="auto"
+                  >
+                    <polygon points="0 0, 10 3.5, 0 7" fill="black" />
+                  </marker>
+                </defs>
+
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke="black"
+                  strokeWidth={2}
+                  markerEnd={`url(#arrowhead-${idx})`}
+                />
+                <text
+                  x={x1}
+                  y={y1 + offsetY - 10}
+                  fontSize="16"
+                  fill="black"
+                  textAnchor="middle"
+                >
+                  {t.simbolo}
+                </text>
+              </svg>
+            );
+          }
+
+          // Transição entre estados diferentes → linha com seta fora do destino
+          const dx = x2 - x1;
+          const dy = y2 - y1;
+          const distancia = Math.sqrt(dx * dx + dy * dy);
+          const ajustadoX2 = x2 - (dx / distancia) * raio;
+          const ajustadoY2 = y2 - (dy / distancia) * raio;
 
           return (
             <svg key={idx} style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}>
-              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="black" strokeWidth={2} />
-              <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 5} fontSize="16" fill="black">
+              <defs>
+                <marker
+                  id={`arrowhead-${idx}`}
+                  markerWidth="10"
+                  markerHeight="7"
+                  refX="10"
+                  refY="3.5"
+                  orient="auto"
+                >
+                  <polygon points="0 0, 10 3.5, 0 7" fill="black" />
+                </marker>
+              </defs>
+
+              <line
+                x1={x1}
+                y1={y1}
+                x2={ajustadoX2}
+                y2={ajustadoY2}
+                stroke="black"
+                strokeWidth={2}
+                markerEnd={`url(#arrowhead-${idx})`}
+              />
+              <text
+                x={(x1 + x2) / 2}
+                y={(y1 + y2) / 2 - 5}
+                fontSize="16"
+                fill="black"
+              >
                 {t.simbolo}
               </text>
             </svg>
           );
         })}
+
 
         {estados.map((estado) => (
           <div
