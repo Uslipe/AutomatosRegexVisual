@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import "./css/Canvas.css";
 
 //Representa um estado-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-interface Estado {
+export interface Estado {
   id: number;
   x: number;
   y: number;
@@ -10,7 +10,7 @@ interface Estado {
 }
 
 //Representa uma transição---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-interface Transicao {
+export interface Transicao {
   origemNome: string;
   destinoNome: string;
   simbolo: string;
@@ -23,22 +23,36 @@ interface CanvasProps {
   modoCriarTransicao: boolean;
   setModoCriarTransicao: React.Dispatch<React.SetStateAction<boolean>>;
   onClickLimparAutomato: () => void;
+  estados: Estado[];
+  setEstados: React.Dispatch<React.SetStateAction<Estado[]>>;
+  transicoes: Transicao[];
+  setTransicoes: React.Dispatch<React.SetStateAction<Transicao[]>>;
+  contador: number;
+  setContador: React.Dispatch<React.SetStateAction<number>>;
+  estadoOrigemTransicao: Estado | null;
+  setEstadoOrigemTransicao: React.Dispatch<React.SetStateAction<Estado | null>>;
 }
 
-const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado, modoCriarTransicao, setModoCriarTransicao }) => {
+
+const Canvas: React.FC<CanvasProps> = ({
+  modoCriarEstado,
+  setModoCriarEstado,
+  modoCriarTransicao,
+  setModoCriarTransicao,
+  onClickLimparAutomato,
+  estados,
+  setEstados,
+  transicoes,
+  setTransicoes,
+  contador,
+  setContador
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: -2500, y: -2500 });
   const [isDragging, setIsDragging] = useState(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
   const [estadoSelecionadoId, setEstadoSelecionadoId] = useState<number | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
-
-  // Estados criados
-  const [estados, setEstados] = useState<Estado[]>([]);
-  const [contador, setContador] = useState(0);
-
-  // Transições
-  const [transicoes, setTransicoes] = useState<Transicao[]>([]);
   const [estadoOrigemTransicao, setEstadoOrigemTransicao] = useState<Estado | null>(null);
 
   // Inicia drag do canvas (pan)
@@ -91,13 +105,20 @@ const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado, mo
     const nome = prompt("Digite o nome do estado:");
     if (!nome || nome.trim() === "") return;
 
+    const formData = new URLSearchParams();
+    formData.append("x-NomeEstado", nome.trim());
+    formData.append("x-isFinal", "false"); // ou "true" se quiser, depende do seu fluxo
+    formData.append("x-isInicial", "false"); // ou true, se quiser
+    formData.append("x-X", xNoCanvas.toString());
+    formData.append("x-Y", yNoCanvas.toString());
+
     // Envia para o backend:
     fetch('http://localhost:8080/automatosregex/PostCriarEstado', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: `x-NomeEstado=${encodeURIComponent(nome.trim())}`
+      body: formData.toString(),
     })
     .then(async (response) => {
       if (!response.ok) {

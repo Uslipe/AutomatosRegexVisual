@@ -1,54 +1,81 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Canvas from "./components/Canvas";
 import Sidebar from "./components/Sidebar";
+
+import type { Estado, Transicao } from "./components/Canvas"; 
+
 
 const App: React.FC = () => {
   const [modoCriarEstado, setModoCriarEstado] = useState(false);
   const [modoCriarTransicao, setModoCriarTransicao] = useState(false);
-  const [estados, setEstados] = useState<any[]>([]);
-  const [transicoes, setTransicoes] = useState<any[]>([]);
-  const [contador, setContador] = useState<number>(0);
-  const [estadoOrigemTransicao, setEstadoOrigemTransicao] = useState<any>(null);
+  const [estados, setEstados] = useState<Estado[]>([]);
+  const [transicoes, setTransicoes] = useState<Transicao[]>([]);
+  const [contador, setContador] = useState(0);
+  const [estadoOrigemTransicao, setEstadoOrigemTransicao] = useState<Estado | null>(null);
 
+  // UseEffect para carregar o autômato ao montar o componente
+  useEffect(() => {
+    fetch("http://localhost:8080/automatosregex/GetAutomato")
+      .then(async (response) => {
+        if (!response.ok) {
+          alert("Erro ao carregar autômato");
+          return;
+        }
+        const data = await response.json();
 
-  // Ativa modo criar estado e desativa criar transição
-  const ativarModoCriarEstado = () => {
-    setModoCriarEstado(true);
-    setModoCriarTransicao(false);
-  };
+        // data deve ter a forma { estados: [...], transicoes: [...] }
+        // Mapear os estados do backend para o formato Estado do frontend:
+        const estadosCarregados = data.estados.map((e: any, index: number) => ({
+          id: index,       // pode usar índice, ou se backend enviar id, usar esse
+          nome: e.nome,
+          x: e.x,
+          y: e.y,
+          // se tiver isFinal ou isInicial e quiser, pode colocar aqui
+        }));
 
-  // Ativa modo criar transição e desativa criar estado
-  const ativarModoCriarTransicao = () => {
-    setModoCriarEstado(false);
-    setModoCriarTransicao(true);
-  };
+        // Ajustar o contador para evitar ids duplicados
+        setContador(estadosCarregados.length);
 
-  const limparAutomato = () => {
-      if (!window.confirm("Tem certeza que deseja limpar o autômato?")) return;
+        // Mapear as transições:
+        const transicoesCarregadas = data.transicoes.map((t: any) => ({
+          origemNome: t.estadoInicial || t.origemNome || t.estadoOrigem,
+          destinoNome: t.estadoFinal || t.destinoNome || t.estadoDestino,
+          simbolo: t.expressao || t.simbolo,
+        }));
 
-      fetch("http://localhost:8080/automatosregex/PostLimparTela", {
-        method: "POST",
+        setEstados(estadosCarregados);
+        setTransicoes(transicoesCarregadas);
+
+        console.log("Estados carregados:", estadosCarregados);
+        console.log("Transições carregadas:", transicoesCarregadas);
+
       })
-        .then((res) => {
-          if (!res.ok) throw new Error("Erro ao limpar no backend");
+      .catch(() => {
+        alert("Erro de conexão ao carregar autômato");
+      });
 
-          //Limpa frontend também
-          setEstados([]);
-          setTransicoes([]);
-          setContador(0);
-          setEstadoOrigemTransicao(null);
-          alert("Autômato limpo com sucesso.");
-        })
-        .catch(() => alert("Erro ao limpar autômato."));
-    };
+  }, []); // Executa só 1 vez no mount
 
+  // ... seus outros handlers e funções
 
   return (
     <>
       <Sidebar
-        onClickCriarEstado={ativarModoCriarEstado}
-        onClickCriarTransicao={ativarModoCriarTransicao}
-        onClickLimparAutomato={limparAutomato}
+        onClickCriarEstado={() => { setModoCriarEstado(true); setModoCriarTransicao(false); }}
+        onClickCriarTransicao={() => { setModoCriarEstado(false); setModoCriarTransicao(true); }}
+        onClickLimparAutomato={() => {
+          if (!window.confirm("Tem certeza que deseja limpar o autômato?")) return;
+          fetch("http://localhost:8080/automatosregex/PostLimparTela", { method: "POST" })
+            .then((res) => {
+              if (!res.ok) throw new Error("Erro ao limpar no backend");
+              setEstados([]);
+              setTransicoes([]);
+              setContador(0);
+              setEstadoOrigemTransicao(null);
+              alert("Autômato limpo com sucesso.");
+            })
+            .catch(() => alert("Erro ao limpar autômato."));
+        }}
         modoCriarEstado={modoCriarEstado}
         modoCriarTransicao={modoCriarTransicao}
       />
@@ -58,7 +85,16 @@ const App: React.FC = () => {
         setModoCriarEstado={setModoCriarEstado}
         modoCriarTransicao={modoCriarTransicao}
         setModoCriarTransicao={setModoCriarTransicao}
-        onClickLimparAutomato={limparAutomato}
+        onClickLimparAutomato={() => {/* opcional: delega para o pai */}}
+        // Passe estados e transicoes para o Canvas para renderizar
+        estados={estados}
+        setEstados={setEstados}
+        transicoes={transicoes}
+        setTransicoes={setTransicoes}
+        contador={contador}
+        setContador={setContador}
+        estadoOrigemTransicao={estadoOrigemTransicao}
+        setEstadoOrigemTransicao={setEstadoOrigemTransicao}
       />
     </>
   );
