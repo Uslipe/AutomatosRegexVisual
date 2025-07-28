@@ -1,7 +1,16 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-})
+  server: {
+    proxy: {
+      // Tudo que começar com /PostCriarEstado vai para localhost:8080
+      '/PostCriarEstado': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      // Se quiser proxy para outras rotas, adicione aqui
+    },
+  },
+});

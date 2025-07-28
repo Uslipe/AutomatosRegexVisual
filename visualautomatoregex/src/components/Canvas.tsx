@@ -22,6 +22,7 @@ interface CanvasProps {
   setModoCriarEstado: React.Dispatch<React.SetStateAction<boolean>>;
   modoCriarTransicao: boolean;
   setModoCriarTransicao: React.Dispatch<React.SetStateAction<boolean>>;
+  onClickLimparAutomato: () => void;
 }
 
 const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado, modoCriarTransicao, setModoCriarTransicao }) => {
@@ -90,16 +91,35 @@ const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado, mo
     const nome = prompt("Digite o nome do estado:");
     if (!nome || nome.trim() === "") return;
 
-    const novoEstado: Estado = {
-      id: contador,
-      x: xNoCanvas,
-      y: yNoCanvas,
-      nome: nome.trim(),
-    };
+    // Envia para o backend:
+    fetch('http://localhost:8080/automatosregex/PostCriarEstado', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: `x-NomeEstado=${encodeURIComponent(nome.trim())}`
+    })
+    .then(async (response) => {
+      if (!response.ok) {
+        const error = await response.json();
+        alert("Erro: " + (error.erro || "Falha ao criar estado no servidor."));
+        return;
+      }
+      // Se deu certo, cria localmente o estado no React
+      const novoEstado: Estado = {
+        id: contador,
+        x: xNoCanvas,
+        y: yNoCanvas,
+        nome: nome.trim(),
+      };
+      setEstados((prev) => [...prev, novoEstado]);
+      setContador((c) => c + 1);
+      setModoCriarEstado(false);
+    })
+    .catch(() => {
+      alert("Erro de conexão com o servidor.");
+    });
 
-    setEstados((prev) => [...prev, novoEstado]);
-    setContador((c) => c + 1);
-    setModoCriarEstado(false);
   };
 
   // Inicia drag de um estado para mover
@@ -119,7 +139,29 @@ const Canvas: React.FC<CanvasProps> = ({ modoCriarEstado, setModoCriarEstado, mo
           simbolo: simbolo.trim(),
         };
 
-        setTransicoes((prev) => [...prev, novaTransicao]);
+        fetch('http://localhost:8080/automatosregex/PostCriarTransicao', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `x-Inicial=${encodeURIComponent(estadoOrigemTransicao.nome)}&x-Expressao=${encodeURIComponent(simbolo.trim())}&x-Destino=${encodeURIComponent(estado.nome)}`
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const error = await response.json();
+            alert("Erro: " + (error.erro || "Falha ao criar transição no servidor."));
+            return;
+          }
+
+          // Transição criada com sucesso no backend, atualiza no frontend
+          setTransicoes((prev) => [...prev, novaTransicao]);
+          setEstadoOrigemTransicao(null);
+          setModoCriarTransicao(false);
+        })
+        .catch(() => {
+          alert("Erro de conexão com o servidor.");
+        });
+
         setEstadoOrigemTransicao(null);
         setModoCriarTransicao(false); // volta ao modo padrão
       }
