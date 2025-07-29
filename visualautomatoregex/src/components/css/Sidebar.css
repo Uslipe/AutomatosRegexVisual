@@ -1,12 +1,11 @@
 .sidebar {
   position: absolute;
-  top: 25vh; 
-  bottom: 25vh;
+  top: 27vh; 
+  bottom: 27vh;
   left: 1vw;
   width: 4vw;
   background-color: #fff;
   border-radius: 12px;
-  padding-top: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -34,8 +33,8 @@
 }
 
 .icon-image{
-    width: 1.5vw;
-    height: 1.5vw;
+    width: 2vw;
+    height: 2vw;
 }
 
 .tool-button.ativo {
@@ -45,7 +44,7 @@
 
 .botao-flutuante {
   position: fixed;
-  bottom: 20px;
+  bottom: 3vh;
   left: 20px;
   padding: 12px 24px;
   border-radius: 25px;

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Canvas from "./components/Canvas";
 import Sidebar from "./components/Sidebar";
-
-import type { Estado, Transicao } from "./components/Canvas"; 
-
+import type { Estado, Transicao } from "./components/Canvas";
 
 const App: React.FC = () => {
   const [modoCriarEstado, setModoCriarEstado] = useState(false);
@@ -14,8 +12,8 @@ const App: React.FC = () => {
   const [estadoOrigemTransicao, setEstadoOrigemTransicao] = useState<Estado | null>(null);
   const [modoDefinirInicial, setModoDefinirInicial] = useState(false);
   const [modoDefinirFinal, setModoDefinirFinal] = useState(false);
+  const [regex, setRegex] = useState(""); // 👉 Novo estado para regex
 
-  // UseEffect para carregar o autômato ao montar o componente
   useEffect(() => {
     fetch("http://localhost:8080/automatosregex/GetAutomato")
       .then(async (response) => {
@@ -25,20 +23,15 @@ const App: React.FC = () => {
         }
         const data = await response.json();
 
-        // data deve ter a forma { estados: [...], transicoes: [...] }
-        // Mapear os estados do backend para o formato Estado do frontend:
         const estadosCarregados = data.estados.map((e: any, index: number) => ({
-          id: index,       // pode usar índice, ou se backend enviar id, usar esse
+          id: index,
           nome: e.nome,
           x: e.x,
           y: e.y,
-          // se tiver isFinal ou isInicial e quiser, pode colocar aqui
         }));
 
-        // Ajustar o contador para evitar ids duplicados
         setContador(estadosCarregados.length);
 
-        // Mapear as transições:
         const transicoesCarregadas = data.transicoes.map((t: any) => ({
           origemNome: t.estadoInicial || t.origemNome || t.estadoOrigem,
           destinoNome: t.estadoFinal || t.destinoNome || t.estadoDestino,
@@ -47,18 +40,24 @@ const App: React.FC = () => {
 
         setEstados(estadosCarregados);
         setTransicoes(transicoesCarregadas);
-
-        console.log("Estados carregados:", estadosCarregados);
-        console.log("Transições carregadas:", transicoesCarregadas);
-
       })
       .catch(() => {
         alert("Erro de conexão ao carregar autômato");
       });
+  }, []);
 
-  }, []); // Executa só 1 vez no mount
+  // 👉 Função para buscar expressão regular
+  const buscarRegex = () => {
+    fetch("http://localhost:8080/automatosregex/GetExpressaoRegular")
+      .then((res) => res.text()) // muda para .text() já que é string pura
+      .then((texto) => {
+        setRegex(texto || "Expressão não encontrada");
+      })
+      .catch(() => {
+        setRegex("Erro ao buscar expressão regular");
+      });
+  };
 
-  // ... seus outros handlers e funções
 
   return (
     <>
@@ -74,6 +73,7 @@ const App: React.FC = () => {
               setTransicoes([]);
               setContador(0);
               setEstadoOrigemTransicao(null);
+              setRegex(""); // também limpa regex
               alert("Autômato limpo com sucesso.");
             })
             .catch(() => alert("Erro ao limpar autômato."));
@@ -82,16 +82,16 @@ const App: React.FC = () => {
           setModoCriarEstado(false);
           setModoCriarTransicao(false);
           setModoDefinirInicial(true);
-          alert("Clique no estado que deseja definir como inicial.");
         }}
         onClickDefinirFinal={() => {
           setModoDefinirFinal(true);
           setModoCriarEstado(false);
           setModoCriarTransicao(false);
-          setModoDefinirInicial(false); // desativa outros modos
+          setModoDefinirInicial(false);
         }}
         modoCriarEstado={modoCriarEstado}
         modoCriarTransicao={modoCriarTransicao}
+        onClickGerarRegex={buscarRegex}
       />
 
       <Canvas
@@ -103,8 +103,7 @@ const App: React.FC = () => {
         setModoDefinirInicial={setModoDefinirInicial}
         modoDefinirFinal={modoDefinirFinal}
         setModoDefinirFinal={setModoDefinirFinal}
-        onClickLimparAutomato={() => {/* opcional: delega para o pai */}}
-        // Passe estados e transicoes para o Canvas para renderizar
+        onClickLimparAutomato={() => {}}
         estados={estados}
         setEstados={setEstados}
         transicoes={transicoes}
@@ -114,6 +113,34 @@ const App: React.FC = () => {
         estadoOrigemTransicao={estadoOrigemTransicao}
         setEstadoOrigemTransicao={setEstadoOrigemTransicao}
       />
+
+      {/* ✅ Botão + exibição da expressão regular */}
+      <div style={{ margin: "20px", textAlign: "center" }}>
+        <button className="botao-flutuante" onClick={buscarRegex}>
+          Converter para expressão regular
+        </button>
+
+        {/* ✅ Área fixa no rodapé para mostrar a expressão */}
+        <div style={{
+          position: "fixed",
+          bottom: "3vh",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#fff",
+          padding: "10px 20px",
+          borderRadius: "10px",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+          fontSize: "16px",
+          fontFamily: "monospace",
+          color: "#801FFF",
+          zIndex: 1000,
+          minWidth: "300px",
+          textAlign: "center"
+        }}>
+          {regex ? `${regex}` : "Expressão ainda não gerada"}
+        </div>
+
+      </div>
     </>
   );
 };

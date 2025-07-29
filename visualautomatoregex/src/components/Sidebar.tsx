@@ -1,9 +1,15 @@
 import React from "react";
 import "./css/Sidebar.css";
-import stateGrey from "../assets/state-grey.png";
-import arrowGrey from "../assets/transition-grey.png";
-import endGrey from "../assets/end-grey.png"
-import startGrey from "../assets/start-grey.png"
+//import stateGrey from "../assets/state-grey.png";
+//import arrowGrey from "../assets/transition-grey.png";
+//import endGrey from "../assets/end-grey.png"
+//import startGrey from "../assets/start-grey.png"
+
+import criarEstado from "../assets/criarEstado.png"
+import criarTransicao from "../assets/criarTransicao.png"
+import definirInicial from "../assets/definirInicial.png"
+import definirFinal from "../assets/definirFinal.png"
+import limpar from "../assets/limpar.png"
 
 interface SidebarProps {
   onClickCriarEstado: () => void;
@@ -11,6 +17,7 @@ interface SidebarProps {
   onClickLimparAutomato: () => void;
   onClickDefinirInicial: () => void;
   onClickDefinirFinal: () => void;
+  onClickGerarRegex: () => void;
   modoCriarEstado: boolean;
   modoCriarTransicao: boolean;
 }
@@ -21,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onClickLimparAutomato,
   onClickDefinirInicial,
   onClickDefinirFinal,
+  onClickGerarRegex,
   modoCriarEstado,
   modoCriarTransicao,
 }) => {
@@ -34,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           title="Criar estado"
           onClick={onClickCriarEstado}
         >
-          <img className="icon-image" src={stateGrey} alt="Criar estado" />
+          <img className="icon-image" src={criarEstado} alt="Criar estado" />
         </button>
 
         <button
@@ -42,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           title="Posicionar transição"
           onClick={onClickCriarTransicao}
         >
-          <img className="icon-image" src={arrowGrey} alt="Posicionar transição" />
+          <img className="icon-image" src={criarTransicao} alt="Posicionar transição" />
         </button>
 
         <button
@@ -50,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           title="Definir estado inicial"
           onClick={onClickDefinirInicial}
         >
-          <img className="icon-image" src={startGrey} alt="Definir estado inicial" />
+          <img className="icon-image" src={definirInicial} alt="Definir estado inicial" />
         </button>
 
         <button
@@ -58,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           title="Definir estado final"
           onClick={onClickDefinirFinal}
         >
-          <img className="icon-image" src={endGrey} alt="Definir estado final" />
+          <img className="icon-image" src={definirFinal} alt="Definir estado final" />
         </button>
 
         <button
@@ -66,17 +74,18 @@ const Sidebar: React.FC<SidebarProps> = ({
           title="Limpar autômato"
           onClick={onClickLimparAutomato}
         >
-          <img className="icon-image"  alt="Limpar automato" />
+          <img className="icon-image" src={limpar} alt="Limpar automato" />
         </button>
 
         {/* Adicione outros botões aqui se necessário */}
 
         <button
           className="botao-flutuante"
-          onClick={() => alert("Ação fora da Sidebar!")}
+          onClick={onClickGerarRegex}
         >
           Converter para expressão regular
         </button>
+
       </div>
 
     </div>
