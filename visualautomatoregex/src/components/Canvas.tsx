@@ -7,6 +7,8 @@ export interface Estado {
   x: number;
   y: number;
   nome: string;
+  isInicial: boolean;
+  isFinal: boolean;
 }
 
 //Representa uma transição---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -23,6 +25,10 @@ interface CanvasProps {
   modoCriarTransicao: boolean;
   setModoCriarTransicao: React.Dispatch<React.SetStateAction<boolean>>;
   onClickLimparAutomato: () => void;
+  modoDefinirInicial: boolean;
+  setModoDefinirInicial: React.Dispatch<React.SetStateAction<boolean>>;
+  modoDefinirFinal: boolean;
+  setModoDefinirFinal: React.Dispatch<React.SetStateAction<boolean>>;
   estados: Estado[];
   setEstados: React.Dispatch<React.SetStateAction<Estado[]>>;
   transicoes: Transicao[];
@@ -40,6 +46,10 @@ const Canvas: React.FC<CanvasProps> = ({
   modoCriarTransicao,
   setModoCriarTransicao,
   onClickLimparAutomato,
+  modoDefinirInicial,
+  setModoDefinirInicial,
+  modoDefinirFinal,
+  setModoDefinirFinal,
   estados,
   setEstados,
   transicoes,
@@ -54,6 +64,10 @@ const Canvas: React.FC<CanvasProps> = ({
   const [estadoSelecionadoId, setEstadoSelecionadoId] = useState<number | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
   const [estadoOrigemTransicao, setEstadoOrigemTransicao] = useState<Estado | null>(null);
+
+//=====================================================================================================================================================================================================
+//  FUNÇÕES
+//=====================================================================================================================================================================================================
 
   // Inicia drag do canvas (pan)
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -132,6 +146,8 @@ const Canvas: React.FC<CanvasProps> = ({
         x: xNoCanvas,
         y: yNoCanvas,
         nome: nome.trim(),
+        isInicial: false,
+        isFinal: false
       };
       setEstados((prev) => [...prev, novoEstado]);
       setContador((c) => c + 1);
@@ -147,6 +163,75 @@ const Canvas: React.FC<CanvasProps> = ({
   const handleMouseDownEstado = (e: React.MouseEvent, estado: Estado) => {
     e.stopPropagation();
 
+    // 👉 Se estiver definindo estado inicial:
+    if (modoDefinirInicial) {
+      fetch("http://localhost:8080/automatosregex/PostDefinirEstadoInicial", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `x-NomeEstado=${encodeURIComponent(estado.nome)}`
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Erro ao definir estado inicial.");
+          return res.json();
+        })
+        .then((data) => {
+          alert(data.mensagem || "Estado inicial definido com sucesso.");
+
+          // Atualiza o estado local
+          setEstados(prev =>
+            prev.map(e => ({
+              ...e,
+              isInicial: e.nome === estado.nome // ou use e.id se preferir
+            }))
+          );
+
+          setModoDefinirInicial(false); // sair do modo
+        })
+        .catch((err) => {
+          alert("Erro ao definir estado inicial.");
+          console.error(err);
+        });
+
+      return; // não deixa fazer drag/transição nesse clique
+    }
+
+    // 👉 Se estiver definindo estado final:
+    if (modoDefinirFinal) {
+      fetch("http://localhost:8080/automatosregex/PostDefinirEstadoFinal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `x-NomeEstado=${encodeURIComponent(estado.nome)}`
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Erro ao definir estado final.");
+          return res.json();
+        })
+        .then((data) => {
+          alert(data.mensagem || "Estado final definido com sucesso.");
+
+          // Atualiza o estado local
+          setEstados(prev =>
+            prev.map(e => ({
+              ...e,
+              isFinal: e.nome === estado.nome // ou use e.id se preferir
+            }))
+          );
+
+          setModoDefinirFinal(false); // sair do modo
+        })
+        .catch((err) => {
+          alert("Erro ao definir estado final.");
+          console.error(err);
+        });
+
+      return;
+    }
+
+
     if (modoCriarTransicao) {
       if (!estadoOrigemTransicao) {
         setEstadoOrigemTransicao(estado);
@@ -161,35 +246,34 @@ const Canvas: React.FC<CanvasProps> = ({
         };
 
         fetch('http://localhost:8080/automatosregex/PostCriarTransicao', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `x-Inicial=${encodeURIComponent(estadoOrigemTransicao.nome)}&x-Expressao=${encodeURIComponent(simbolo.trim())}&x-Destino=${encodeURIComponent(estado.nome)}`
-      })
-        .then(async (response) => {
-          if (!response.ok) {
-            const error = await response.json();
-            alert("Erro: " + (error.erro || "Falha ao criar transição no servidor."));
-            return;
-          }
-
-          // Transição criada com sucesso no backend, atualiza no frontend
-          setTransicoes((prev) => [...prev, novaTransicao]);
-          setEstadoOrigemTransicao(null);
-          setModoCriarTransicao(false);
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `x-Inicial=${encodeURIComponent(estadoOrigemTransicao.nome)}&x-Expressao=${encodeURIComponent(simbolo.trim())}&x-Destino=${encodeURIComponent(estado.nome)}`
         })
-        .catch(() => {
-          alert("Erro de conexão com o servidor.");
-        });
+          .then(async (response) => {
+            if (!response.ok) {
+              const error = await response.json();
+              alert("Erro: " + (error.erro || "Falha ao criar transição no servidor."));
+              return;
+            }
+
+            setTransicoes((prev) => [...prev, novaTransicao]);
+            setEstadoOrigemTransicao(null);
+            setModoCriarTransicao(false);
+          })
+          .catch(() => {
+            alert("Erro de conexão com o servidor.");
+          });
 
         setEstadoOrigemTransicao(null);
-        setModoCriarTransicao(false); // volta ao modo padrão
+        setModoCriarTransicao(false);
       }
       return;
     }
 
-    // Lógica de drag continua igual:
+    // Arrastar estado
     setEstadoSelecionadoId(estado.id);
     const rect = containerRef.current!.getBoundingClientRect();
     dragOffset.current = {
@@ -198,6 +282,9 @@ const Canvas: React.FC<CanvasProps> = ({
     };
   };
 
+//=====================================================================================================================================================================================================
+//  VISUAL
+//=====================================================================================================================================================================================================
 
   return (
     <div
@@ -220,135 +307,155 @@ const Canvas: React.FC<CanvasProps> = ({
           backgroundSize: "20px 20px",
         }}
       >
-        {transicoes.map((t, idx) => {
-          const origem = estados.find(e => e.nome === t.origemNome);
-          const destino = estados.find(e => e.nome === t.destinoNome);
-          if (!origem || !destino) return null;
+        <svg
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none", // permite cliques passarem para a div pai
+          }}
+        >
+          {/* Definição do marcador de setas */}
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="7"
+              refX="10"
+              refY="3.5"
+              orient="auto"
+            >
+              <polygon points="0 0, 10 3.5, 0 7" fill="black" />
+            </marker>
+          </defs>
 
-          const x1 = origem.x;
-          const y1 = origem.y;
-          const x2 = destino.x;
-          const y2 = destino.y;
-          const raio = 25;
+          {/* Transições */}
+          {transicoes.map((t, idx) => {
+            const origem = estados.find(e => e.nome === t.origemNome);
+            const destino = estados.find(e => e.nome === t.destinoNome);
+            if (!origem || !destino) return null;
 
-          if (origem.id === destino.id) {
-            // Transição para o mesmo estado → curva circular
-            const offsetY = -raio * 2.5;
+            const raio = 25;
 
-            const pathD = `
-              M ${x1} ${y1}
-              C ${x1 + 40} ${y1 + offsetY}, ${x1 - 40} ${y1 + offsetY}, ${x1} ${y1}
-            `;
+            if (origem.id === destino.id) {
+              // Auto-laço
+              return (
+                <g key={idx}>
+                  <path
+                    d={`
+                      M ${origem.x} ${origem.y - raio}
+                      C ${origem.x + 40} ${origem.y - 60},
+                        ${origem.x - 40} ${origem.y - 60},
+                        ${origem.x} ${origem.y - raio}
+                    `}
+                    stroke="black"
+                    fill="none"
+                    markerEnd="url(#arrowhead)"
+                  />
+                  <text
+                    x={origem.x}
+                    y={origem.y - raio - 65}
+                    fontSize="14"
+                    textAnchor="middle"
+                  >
+                    {t.simbolo}
+                  </text>
+                </g>
+              );
+            }
+
+            // Transição entre estados diferentes
+            const dx = destino.x - origem.x;
+            const dy = destino.y - origem.y;
+            const distancia = Math.sqrt(dx * dx + dy * dy);
+            const normX = dx / distancia;
+            const normY = dy / distancia;
+
+            const x1 = origem.x + normX * raio;
+            const y1 = origem.y + normY * raio;
+            const x2 = destino.x - normX * raio;
+            const y2 = destino.y - normY * raio;
 
             return (
-              <svg key={idx} style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}>
-                <defs>
-                  <marker
-                    id={`arrowhead-${idx}`}
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="10"
-                    refY="3.5"
-                    orient="auto"
-                  >
-                    <polygon points="0 0, 10 3.5, 0 7" fill="black" />
-                  </marker>
-                </defs>
-
-                <path
-                  d={pathD}
-                  fill="none"
+              <g key={idx}>
+                <line
+                  x1={x1}
+                  y1={y1}
+                  x2={x2}
+                  y2={y2}
                   stroke="black"
                   strokeWidth={2}
-                  markerEnd={`url(#arrowhead-${idx})`}
+                  markerEnd="url(#arrowhead)"
                 />
                 <text
-                  x={x1}
-                  y={y1 + offsetY - 10}
-                  fontSize="16"
-                  fill="black"
+                  x={(x1 + x2) / 2}
+                  y={(y1 + y2) / 2 - 5}
+                  fontSize="14"
                   textAnchor="middle"
                 >
                   {t.simbolo}
                 </text>
-              </svg>
+              </g>
             );
-          }
+          })}
 
-          // Transição entre estados diferentes → linha com seta fora do destino
-          const dx = x2 - x1;
-          const dy = y2 - y1;
-          const distancia = Math.sqrt(dx * dx + dy * dy);
-          const ajustadoX2 = x2 - (dx / distancia) * raio;
-          const ajustadoY2 = y2 - (dy / distancia) * raio;
+          {/* Estados */}
+          {estados.map((estado) => (
+            <g
+              key={estado.id}
+              onMouseDown={(e) => handleMouseDownEstado(e as any, estado)}
+              style={{ cursor: "pointer", pointerEvents: "auto" }}
+            >
+              {estado.isFinal && (
+                <circle
+                  cx={estado.x}
+                  cy={estado.y}
+                  r={30}
+                  stroke="black"
+                  fill="none"
+                  strokeWidth={2}
+                />
+              )}
 
-          return (
-            <svg key={idx} style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}>
-              <defs>
-                <marker
-                  id={`arrowhead-${idx}`}
-                  markerWidth="10"
-                  markerHeight="7"
-                  refX="10"
-                  refY="3.5"
-                  orient="auto"
-                >
-                  <polygon points="0 0, 10 3.5, 0 7" fill="black" />
-                </marker>
-              </defs>
-
-              <line
-                x1={x1}
-                y1={y1}
-                x2={ajustadoX2}
-                y2={ajustadoY2}
-                stroke="black"
+              <circle
+                cx={estado.x}
+                cy={estado.y}
+                r={25}
+                fill={estadoOrigemTransicao?.id === estado.id ? "#e0f7fa" : "#fff"}
+                stroke={estadoOrigemTransicao?.id === estado.id ? "#2196f3" : "black"}
                 strokeWidth={2}
-                markerEnd={`url(#arrowhead-${idx})`}
               />
+
+              {estado.isInicial && (
+                <circle
+                  cx={estado.x}
+                  cy={estado.y}
+                  r={16}
+                  fill="none"
+                  stroke="black"
+                  strokeWidth={2}
+                />
+              )}
+
               <text
-                x={(x1 + x2) / 2}
-                y={(y1 + y2) / 2 - 5}
-                fontSize="16"
-                fill="black"
+                x={estado.x}
+                y={estado.y + 5}
+                textAnchor="middle"
+                fontWeight="bold"
+                fontSize="14"
               >
-                {t.simbolo}
+                {estado.nome}
               </text>
-            </svg>
-          );
-        })}
+            </g>
 
-
-        {estados.map((estado) => (
-          <div
-            key={estado.id}
-            className="estado"
-            onMouseDown={(e) => handleMouseDownEstado(e, estado)}
-            style={{
-              position: "absolute",
-              left: estado.x - 25,
-              top: estado.y - 25,
-              width: 50,
-              height: 50,
-              borderRadius: "50%",
-              backgroundColor: estadoOrigemTransicao?.id === estado.id ? "#e0f7fa" : "#fff",
-              border: estadoOrigemTransicao?.id === estado.id ? "3px solid #2196f3" : "2px solid #000",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              fontWeight: "bold",
-              userSelect: "none",
-              cursor: "pointer",
-              color: "#000",
-            }}
-          >
-            {estado.nome}
-          </div>
-        ))}
+          ))}
+        </svg>
       </div>
     </div>
   );
-};
+}
 
 export default Canvas;
   

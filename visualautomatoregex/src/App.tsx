@@ -12,6 +12,8 @@ const App: React.FC = () => {
   const [transicoes, setTransicoes] = useState<Transicao[]>([]);
   const [contador, setContador] = useState(0);
   const [estadoOrigemTransicao, setEstadoOrigemTransicao] = useState<Estado | null>(null);
+  const [modoDefinirInicial, setModoDefinirInicial] = useState(false);
+  const [modoDefinirFinal, setModoDefinirFinal] = useState(false);
 
   // UseEffect para carregar o autômato ao montar o componente
   useEffect(() => {
@@ -76,6 +78,18 @@ const App: React.FC = () => {
             })
             .catch(() => alert("Erro ao limpar autômato."));
         }}
+        onClickDefinirInicial={() => {
+          setModoCriarEstado(false);
+          setModoCriarTransicao(false);
+          setModoDefinirInicial(true);
+          alert("Clique no estado que deseja definir como inicial.");
+        }}
+        onClickDefinirFinal={() => {
+          setModoDefinirFinal(true);
+          setModoCriarEstado(false);
+          setModoCriarTransicao(false);
+          setModoDefinirInicial(false); // desativa outros modos
+        }}
         modoCriarEstado={modoCriarEstado}
         modoCriarTransicao={modoCriarTransicao}
       />
@@ -85,6 +99,10 @@ const App: React.FC = () => {
         setModoCriarEstado={setModoCriarEstado}
         modoCriarTransicao={modoCriarTransicao}
         setModoCriarTransicao={setModoCriarTransicao}
+        modoDefinirInicial={modoDefinirInicial}
+        setModoDefinirInicial={setModoDefinirInicial}
+        modoDefinirFinal={modoDefinirFinal}
+        setModoDefinirFinal={setModoDefinirFinal}
         onClickLimparAutomato={() => {/* opcional: delega para o pai */}}
         // Passe estados e transicoes para o Canvas para renderizar
         estados={estados}

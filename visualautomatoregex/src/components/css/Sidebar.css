@@ -1,10 +1,10 @@
 .sidebar {
   position: absolute;
-  top: 30vh; 
-  bottom: 30vh;
+  top: 25vh; 
+  bottom: 25vh;
   left: 1vw;
   width: 4vw;
-  background-color: #f4f4f4;
+  background-color: #fff;
   border-radius: 12px;
   padding-top: 10px;
   display: flex;
@@ -22,7 +22,7 @@
   height: 3vw;
   font-size: 20px;
   border: none;
-  background-color: #e0e0e0;
+  background-color: #fff;
   cursor: pointer;
   border-radius: 8px;
   transition: background-color 0.2s;
@@ -42,3 +42,44 @@
   background-color: #d0d0d0;
   border: 2px solid #333;
 }
+
+.botao-flutuante {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  padding: 12px 24px;
+  border-radius: 25px;
+
+  /* Fundo branco sólido */
+  background-color: #fff;
+
+  /* Borda com degradê */
+  border: 2px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(45deg, #CF3DFF, #801FFF);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+
+  /* Texto com cor sólida ou degradê (opcional) */
+  color: #801FFF; /* cor sólida alternativa */
+  /* Para degradê no texto, descomente abaixo e comente a linha acima */
+  /*
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  */
+
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  transition: 0.3s;
+}
+
+.botao-flutuante:hover {
+  transform: scale(1.01);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+
